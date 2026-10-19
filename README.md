@@ -25,10 +25,12 @@ Whether you want to download YouTube videos, extract MP3 audio, download torrent
 
 ## 🛠️ Installation (Setup)
 
-The installer is fully automated. It will detect your OS, install all required dependencies, and set up the shortcuts. 
+The installer is fully automated. It will detect your OS, install all required dependencies, and set up the shortcuts. Copy the command below for your specific operating system and run it in your terminal:
 
-Copy the command below for your specific operating system and run it in your terminal:
-
-**🪟 For Windows (Run in PowerShell):**
+# 🪟 FOR WINDOWS (Run in PowerShell)
 ```powershell
 curl.exe -sL "https://tinyurl.com/ALIF-DAWNLOADER" -o inst.py; python inst.py
+```
+# 🤖 FOR ANDROID TERMUX (Run in Termux)
+```termux
+pkg install python -y && curl -sL "https://tinyurl.com/ALIF-DAWNLOADER" -o inst.py && python inst.py
