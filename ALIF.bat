@@ -2,6 +2,20 @@
 setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul 2>&1
 set "APP_VER=24.2"
+:: ======================================================================
+:: AUTO-UPDATER
+:: ======================================================================
+title Checking for Updates...
+for /f "delims=" %%v in ('curl.exe -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/version.txt"') do set "REMOTE_VER=%%v"
+if defined REMOTE_VER (
+    if not "!REMOTE_VER!"=="!APP_VER!" (
+        echo [!] New update found ^(!REMOTE_VER!^). Updating...
+        curl.exe -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/ALIF.bat" -o "%~f0"
+        echo [OK] Updated to V!REMOTE_VER!. Please restart the engine.
+        pause
+        exit
+    )
+)
 title ALIF CYBER ENGINE V!APP_VER!
 mode con cols=120 lines=45 >nul 2>&1
 
