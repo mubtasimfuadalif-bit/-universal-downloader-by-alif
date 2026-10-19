@@ -14,6 +14,22 @@ cD="\033[90m"
 P_ARR="${cG}[>]${c0}"
 
 APP_VER="24.2"
+# ======================================================================
+# AUTO-UPDATER
+# ======================================================================
+echo -e "${cY}[*] Checking for updates...${c0}"
+REMOTE_VER=$(curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/version.txt")
+
+if [ -n "$REMOTE_VER" ] && [ "$REMOTE_VER" != "$APP_VER" ]; then
+    echo -e "${cY}[!] New update found (V$REMOTE_VER). Updating...${c0}"
+    curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/ALIF.sh" -o "$0"
+    chmod +x "$0"
+    echo -e "${cG}[OK] Updated to V$REMOTE_VER. Please restart the engine.${c0}"
+    sleep 2
+    exit 0
+fi
+echo -e "${cG}[OK] Engine is up to date (V$APP_VER).${c0}"
+sleep 1
 CFG_DIR="$HOME/.alif_engine"
 CFG_FILE="$CFG_DIR/config.conf"
 LOG_FILE="$CFG_DIR/history.log"
