@@ -34,3 +34,9 @@ curl.exe -sL "https://tinyurl.com/ALIF-DAWNLOADER" -o inst.py; python inst.py
 # 🤖 FOR ANDROID TERMUX (Run in Termux)
 ```termux
 pkg install python -y && curl -sL "https://tinyurl.com/ALIF-DAWNLOADER" -o inst.py && python inst.py
+```
+# 🤖 Run This In Termux Next Time Type Only
+```
+alif
+```
+
