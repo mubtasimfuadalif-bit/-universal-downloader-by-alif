@@ -29,9 +29,6 @@ The installer is fully automated. It will detect your OS, install all required d
 
 Copy the command below for your specific operating system and run it in your terminal:
 
-```bash
-# 🪟 FOR WINDOWS (Run in PowerShell)
+**🪟 For Windows (Run in PowerShell):**
+```powershell
 curl.exe -sL "https://tinyurl.com/ALIF-DAWNLOADER" -o inst.py; python inst.py
-
-# 🤖 FOR ANDROID TERMUX (Run in Termux)
-pkg install python -y && curl -sL "https://tinyurl.com/ALIF-DAWNLOADER" -o inst.py && python inst.py
