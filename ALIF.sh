@@ -1,4 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
+# Self-healing line endings (fixes CRLF issues if downloaded from Windows)
+sed -i 's/\r$//' "$0" 2>/dev/null
 
 # ======================================================================
 # [01] ANSI COLOR ENGINE & SETUP
@@ -13,23 +15,7 @@ cW="\033[97m"
 cD="\033[90m"
 P_ARR="${cG}[>]${c0}"
 
-APP_VER="24.2"
-# ======================================================================
-# AUTO-UPDATER
-# ======================================================================
-echo -e "${cY}[*] Checking for updates...${c0}"
-REMOTE_VER=$(curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/version.txt")
-
-if [ -n "$REMOTE_VER" ] && [ "$REMOTE_VER" != "$APP_VER" ]; then
-    echo -e "${cY}[!] New update found (V$REMOTE_VER). Updating...${c0}"
-    curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/ALIF.sh" -o "$0"
-    chmod +x "$0"
-    echo -e "${cG}[OK] Updated to V$REMOTE_VER. Please restart the engine.${c0}"
-    sleep 2
-    exit 0
-fi
-echo -e "${cG}[OK] Engine is up to date (V$APP_VER).${c0}"
-sleep 1
+APP_VER="25"
 CFG_DIR="$HOME/.alif_engine"
 CFG_FILE="$CFG_DIR/config.conf"
 LOG_FILE="$CFG_DIR/history.log"
@@ -77,6 +63,22 @@ FILE_DIR="$MAIN_DIR/Files"
 TORRENT_DIR="$MAIN_DIR/Torrents"
 ARCHIVE_FILE="$MAIN_DIR/archive.txt"
 mkdir -p "$VIDEO_DIR" "$AUDIO_DIR" "$FILE_DIR" "$TORRENT_DIR"
+
+# ======================================================================
+# AUTO-UPDATER
+# ======================================================================
+echo -e "${cY}[*] Checking for updates...${c0}"
+REMOTE_VER=$(curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/version.txt")
+
+if [ -n "$REMOTE_VER" ] && [ "$REMOTE_VER" != "$APP_VER" ]; then
+    echo -e "${cY}[!] New update found (V$REMOTE_VER). Updating...${c0}"
+    curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/ALIF.sh" -o "$0"
+    sed -i 's/\r$//' "$0"
+    chmod +x "$0"
+    echo -e "${cG}[OK] Updated to V$REMOTE_VER. Please restart the engine.${c0}"
+    sleep 2
+    exit 0
+fi
 
 # ======================================================================
 # [02] SYSTEM PROBE & DEPENDENCIES
