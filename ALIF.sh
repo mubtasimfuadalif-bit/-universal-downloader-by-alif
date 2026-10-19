@@ -47,6 +47,7 @@ NOTIFY=1
 AUTO_UPDATE=1
 BOOT_ANIM=1
 UPDATE_CHANNEL="nightly"
+LAST_UPDATE=""
 
 # কনফিগ লোডার
 if [ -f "$CFG_FILE" ]; then
@@ -61,7 +62,33 @@ TORRENT_DIR="$MAIN_DIR/Torrents"
 ARCHIVE_FILE="$MAIN_DIR/archive.txt"
 mkdir -p "$VIDEO_DIR" "$AUDIO_DIR" "$FILE_DIR" "$TORRENT_DIR"
 
-# সেভ কনফিগ ফাংশন
+# ======================================================================
+# [02] SYSTEM PROBE & DEPENDENCIES
+# ======================================================================
+probe_deps() {
+    YTDLP_OK=0; ARIA_OK=0; FFMPEG_OK=0; DENO_OK=0; PY_OK=0
+    command -v yt-dlp &>/dev/null && YTDLP_OK=1 && YTDLP_VER=$(yt-dlp --version 2>/dev/null)
+    command -v aria2c &>/dev/null && ARIA_OK=1 && ARIA_VER=$(aria2c --version | head -n 1 | awk '{print $3}')
+    command -v ffmpeg &>/dev/null && FFMPEG_OK=1 && FFMPEG_VER="OK"
+    command -v deno &>/dev/null && DENO_OK=1 && DENO_VER="OK"
+    command -v python &>/dev/null && PY_OK=1 && PY_CMD="python"
+
+    if [ "$YTDLP_OK" -eq 0 ] || [ "$ARIA_OK" -eq 0 ] || [ "$FFMPEG_OK" -eq 0 ]; then
+        clear
+        echo -e "${cY}Missing dependencies! Installing core engines...${c0}"
+        pkg update -y
+        pkg install yt-dlp aria2 ffmpeg python deno termux-api -y
+        probe_deps
+    fi
+}
+
+build_status() {
+    if [ "$YTDLP_OK" -eq 1 ]; then S_Y="${cG}yt-dlp $YTDLP_VER${c0}"; else S_Y="${cR}yt-dlp MISSING${c0}"; fi
+    if [ "$ARIA_OK" -eq 1 ]; then S_A="${cG}aria2 $ARIA_VER${c0}"; else S_A="${cR}aria2 MISSING${c0}"; fi
+    if [ "$FFMPEG_OK" -eq 1 ]; then S_F="${cG}ffmpeg OK${c0}"; else S_F="${cR}ffmpeg MISSING${c0}"; fi
+    if [ "$DENO_OK" -eq 1 ]; then S_D="${cG}deno OK${c0}"; else S_D="${cY}deno missing${c0}"; fi
+}
+
 save_config() {
     cat <<EOF > "$CFG_FILE"
 UILANG="$UILANG"
@@ -89,27 +116,29 @@ NOTIFY="$NOTIFY"
 AUTO_UPDATE="$AUTO_UPDATE"
 BOOT_ANIM="$BOOT_ANIM"
 UPDATE_CHANNEL="$UPDATE_CHANNEL"
+LAST_UPDATE="$LAST_UPDATE"
 EOF
 }
 
 # ======================================================================
-# [02] LANGUAGE ENGINE
+# [03] LANGUAGE ENGINE
 # ======================================================================
 set_lang() {
     if [ "$UILANG" == "BN" ]; then
         MSG_TITLE="BANGLISH COMMAND DASHBOARD"
         MSG_L1="[1] Video/Audio Download"
-        MSG_L2="[2] Playlist Download"
+        MSG_L2="[2] Playlist / Channel Download"
         MSG_L3="[3] Direct File (ISO/ZIP)"
         MSG_L4="[4] Batch Download"
-        MSG_L5="[5] Format Dekhun"
-        MSG_L6="[K] Clip Download"
-        MSG_R1="[6] Folder Change"
+        MSG_L5="[5] Format O Quality Dekhun"
+        MSG_L6="[K] Clip Download (Somoy Range)"
+        MSG_R1="[6] Download Folder Change"
         MSG_R2="[7] System Diagnostic"
         MSG_R3="[8] History Dekhun"
         MSG_R4="[9] Folder Khulun"
         MSG_R5="[T] Torrent Download"
-        MSG_R6="[E] Extras (Sub/Thumb)"
+        MSG_R6="[E] Extras (Sub/Thumb/Info/Live)"
+        MSG_S="[S] Settings  [U] Update  [C] Developer  [L] Language  [R] Manual  [0] Exit"
     else
         MSG_TITLE="UNIVERSAL COMMAND DASHBOARD"
         MSG_L1="[1] Media Download (Video/Audio)"
@@ -124,48 +153,24 @@ set_lang() {
         MSG_R4="[9] Open Download Vault"
         MSG_R5="[T] Torrent / Magnet Downloader"
         MSG_R6="[E] Extras (Subs/Thumb/Info/Live)"
+        MSG_S="[S] Settings  [U] Update  [C] Contact  [L] Language  [R] Manual  [0] Exit"
     fi
-}
-
-# ======================================================================
-# [03] SYSTEM PROBE & DEPENDENCIES
-# ======================================================================
-probe_deps() {
-    YTDLP_OK=0; ARIA_OK=0; FFMPEG_OK=0; DENO_OK=0
-    command -v yt-dlp &>/dev/null && YTDLP_OK=1 && YTDLP_VER=$(yt-dlp --version)
-    command -v aria2c &>/dev/null && ARIA_OK=1 && ARIA_VER=$(aria2c --version | head -n 1 | awk '{print $3}')
-    command -v ffmpeg &>/dev/null && FFMPEG_OK=1 && FFMPEG_VER="OK"
-    command -v deno &>/dev/null && DENO_OK=1 && DENO_VER="OK"
-
-    if [ "$YTDLP_OK" -eq 0 ] || [ "$ARIA_OK" -eq 0 ] || [ "$FFMPEG_OK" -eq 0 ]; then
-        clear
-        echo -e "${cR}Missing dependencies! Installing core engines...${c0}"
-        pkg update -y
-        pkg install yt-dlp aria2 ffmpeg python -y
-        probe_deps
-    fi
-}
-
-build_status() {
-    if [ "$YTDLP_OK" -eq 1 ]; then S_Y="${cG}yt-dlp $YTDLP_VER${c0}"; else S_Y="${cR}yt-dlp MISSING${c0}"; fi
-    if [ "$ARIA_OK" -eq 1 ]; then S_A="${cG}aria2 $ARIA_VER${c0}"; else S_A="${cR}aria2 MISSING${c0}"; fi
-    if [ "$FFMPEG_OK" -eq 1 ]; then S_F="${cG}ffmpeg OK${c0}"; else S_F="${cR}ffmpeg MISSING${c0}"; fi
-    if [ "$DENO_OK" -eq 1 ]; then S_D="${cG}deno OK${c0}"; else S_D="${cY}deno missing${c0}"; fi
 }
 
 # ======================================================================
 # [04] UI & LOGO
 # ======================================================================
 show_logo() {
-    echo -e "${cC}      _     _      ___  _____ "
-    echo -e "${cC}     / \\   | |    |_ _||  ___|"
-    echo -e "${cC}    / _ \\  | |     | | | |_   "
-    echo -e "${cB}   / ___ \\ | |___  | | |  _|  "
-    echo -e "${cB}  /_/   \\_\\|_____||___||_|    "
-    echo -e "${cW}   C Y B E R   E N G I N E  ${cD}//${cG} V$APP_VER ${cD}//${cY} ULTIMATE EDITION${c0}"
-    echo -e "${cD}   MULTI-THREAD  //  SMART FALLBACK  //  TORRENT READY${c0}"
+    echo -e "${cC}                               _     _      ___  _____ "
+    echo -e "${cC}                              / \\   | |    |_ _||  ___|"
+    echo -e "${cC}                             / _ \\  | |     | | | |_   "
+    echo -e "${cB}                            / ___ \\ | |___  | | |  _|  "
+    echo -e "${cB}                           /_/   \\_\\|_____||___||_|    "
+    echo -e "${cW}                C Y B E R   E N G I N E  ${cD}//${cG} V$APP_VER ${cD}//${cY} ULTIMATE EDITION${c0}"
+    echo -e "${cD}                MULTI-THREAD  //  SMART FALLBACK  //  TORRENT READY${c0}"
     echo -e "${cC}  =============================================================================="
-    echo -e "${cD}   [OPERATOR] $(whoami)@termux   [VAULT] $MAIN_DIR${c0}"
+    echo -e "${cD}           [OPERATOR] $(whoami)@termux   [FREE] $(df -h $HOME | awk 'NR==2 {print $4}')${c0}"
+    echo -e "${cD}           [VAULT]    $MAIN_DIR${c0}"
     echo -e "${cC}  ------------------------------------------------------------------------------"
 }
 
@@ -188,7 +193,7 @@ main_menu() {
     printf "${cC}| %-40s | %-40s ${cC}|\n" "$MSG_L5" "$MSG_R5"
     printf "${cC}| %-40s | %-40s ${cC}|\n" "$MSG_L6" "$MSG_R6"
     echo -e "${cC}+---------------------------------------------------------------------------------------+"
-    echo -e "${cC}| ${cD}[S] Settings  [U] Update  [C] Contact  [L] Language  [R] Manual  [0] Exit${c0}"
+    echo -e "${cC}| ${cD}$MSG_S${c0}"
     echo -e "${cC}+---------------------------------------------------------------------------------------+"
     echo ""
     echo -n -e "    ${cG}[ALIF]${c0} ${cC}root@termux${c0}:~# "
@@ -224,11 +229,17 @@ media_input() {
     clear
     show_logo
     echo -e "    ${cC}================== MEDIA DOWNLOAD // MODE: $PL_FLAG ==================${c0}"
+    echo -e "${cD}   Tip: paste a link, V = paste clipboard, ?words = YouTube search!${c0}"
     echo -n -e "    ${P_ARR} Target URL: "
     read -r URL
     if [ -z "$URL" ]; then main_menu; return; fi
     
-    if [[ "$PL_FLAG" == "--yes-playlist" ]]; then
+    if [[ "$URL" == "V" || "$URL" == "v" ]]; then
+        URL=$(termux-clipboard-get)
+        echo -e "${cD}   Pasted: $URL${c0}"
+    fi
+
+    if [ "$PL_FLAG" == "--yes-playlist" ]; then
         echo -n -e "    ${P_ARR} Items e.g. 1-5,8 [blank = all]: "
         read -r PL_ITEMS
         if [ -n "$PL_ITEMS" ]; then PL_ITEMS="--playlist-items $PL_ITEMS"; else PL_ITEMS=""; fi
@@ -276,13 +287,13 @@ run_media() {
     MERGE=""
     CLIP_ARGS="$1" 
 
-    if [ "$LAST_MODE" == "mp3" ]; then CURRENT_TARGET_DIR="$AUDIO_DIR"; AUDIO_ARGS="-x --audio-format mp3 --audio-quality 0"; fi
+    if [ "$LAST_MODE" == "mp3" ]; then CURRENT_TARGET_DIR="$AUDIO_DIR"; AUDIO_ARGS="-x --audio-format mp3 --audio-quality 320K"; fi
     if [ "$LAST_MODE" == "m4a" ]; then CURRENT_TARGET_DIR="$AUDIO_DIR"; AUDIO_ARGS="-x --audio-format m4a --audio-quality 0"; fi
     if [ "$LAST_MODE" == "opus" ]; then CURRENT_TARGET_DIR="$AUDIO_DIR"; fi
     if [ "$LAST_MODE" == "video" ]; then MERGE="--merge-output-format mp4"; fi
 
     if [ "$PL_FLAG" == "--yes-playlist" ]; then
-        OUT_TPL="$CURRENT_TARGET_DIR/%(playlist_title)s/%(playlist_index)03d - %(title).120s $TAG_NAME.%(ext)s"
+        OUT_TPL="$CURRENT_TARGET_DIR/%(playlist_title|Playlist)s/%(playlist_index)03d - %(title).120s $TAG_NAME.%(ext)s"
     else
         OUT_TPL="$CURRENT_TARGET_DIR/%(title).120s $TAG_NAME.%(ext)s"
     fi
@@ -302,37 +313,50 @@ run_media() {
 
     echo -e "\n${cC}  =============================================================================="
     echo -e "${cW}   ${P_ARR} DOWNLOADING via ALIF CYBER ENGINE${c0}"
+    echo -e "${cD}   Ctrl+C = cancel   //   target: $CURRENT_TARGET_DIR${c0}"
     echo -e "${cC}  ==============================================================================${c0}\n"
 
+    # PASS 1
     echo -e "${cC}  [*] PASS 1: Standard Engine...${c0}"
     yt-dlp $PL_FLAG $PL_ITEMS -f "$FMT_SEL" $AUDIO_ARGS $MERGE $CLIP_ARGS $EXTRA $NET_ARGS -o "$OUT_TPL" "$URL"
     RC=$?
 
+    # PASS 2
     if [ $RC -ne 0 ]; then
-        echo -e "\n${cY}  [!] PASS 1 Blocked. PASS 2: TV + Mweb Bypass...${c0}"
+        echo -e "\n${cY}  [!] PASS 1 Blocked. PASS 2: YouTube TV + mweb clients...${c0}"
         yt-dlp $PL_FLAG $PL_ITEMS -f "$FMT_SEL" $AUDIO_ARGS $MERGE $CLIP_ARGS $EXTRA $NET_ARGS --extractor-args "youtube:player_client=tv,mweb" -o "$OUT_TPL" "$URL"
         RC=$?
     fi
 
+    # PASS 3
     if [ $RC -ne 0 ]; then
-        echo -e "\n${cY}  [!] PASS 2 Blocked. PASS 3: Android VR Core...${c0}"
+        echo -e "\n${cY}  [!] PASS 2 Blocked. PASS 3: YouTube Android VR client...${c0}"
         yt-dlp $PL_FLAG $PL_ITEMS -f "$FMT_SEL" $AUDIO_ARGS $MERGE $CLIP_ARGS $EXTRA $NET_ARGS --extractor-args "youtube:player_client=android_vr" -o "$OUT_TPL" "$URL"
         RC=$?
     fi
 
+    # PASS 4
     if [ $RC -ne 0 ] && [ "$DENO_OK" -eq 1 ]; then
         echo -e "\n${cY}  [!] PASS 3 Blocked. PASS 4: Deno JS Challenge Solver...${c0}"
         yt-dlp $PL_FLAG $PL_ITEMS -f "$FMT_SEL" $AUDIO_ARGS $MERGE $CLIP_ARGS $EXTRA $NET_ARGS --remote-components ejs:github -o "$OUT_TPL" "$URL"
         RC=$?
     fi
+
+    # PASS 5
+    if [ $RC -ne 0 ]; then
+        echo -e "\n${cY}  [!] PASS 4 Blocked. PASS 5: Last resort (Browser impersonation)...${c0}"
+        echo -e "${cD}  (Note: Termux cannot read browser cookies directly. Ensure cookies.txt is set in Settings.)${c0}"
+        yt-dlp $PL_FLAG $PL_ITEMS -f "$FMT_SEL" $AUDIO_ARGS $MERGE $CLIP_ARGS $EXTRA $NET_ARGS --impersonate "$IMPERSONATE" --extractor-args "youtube:player_client=tv,web_safari" -o "$OUT_TPL" "$URL"
+        RC=$?
+    fi
     
     if [ $RC -eq 0 ]; then
-        echo -e "$(date) [OK] [media/$LAST_MODE] $URL" >> "$LOG_FILE"
+        echo "$(date) [OK] [media/$LAST_MODE] $URL" >> "$LOG_FILE"
         echo -e "\n${cG}  [OK] DOWNLOAD COMPLETED SUCCESSFULLY!${c0}"
         if [ "$AUTO_OPEN" -eq 1 ]; then termux-open "$CURRENT_TARGET_DIR" 2>/dev/null; fi
         if [ "$NOTIFY" -eq 1 ]; then termux-notification -t "ALIF CYBER" -c "Download Complete!" 2>/dev/null; fi
     else
-        echo -e "$(date) [FAIL] [media/$LAST_MODE] $URL" >> "$LOG_FILE"
+        echo "$(date) [FAIL] [media/$LAST_MODE] $URL" >> "$LOG_FILE"
         echo -e "\n${cR}  [X] DOWNLOAD FAILED OR BLOCKED!${c0}"
     fi
     echo ""
@@ -381,14 +405,14 @@ direct_file_input() {
         return
     fi
     
-    echo -e "\n${cG}  [*] Downloading via aria2c (16 threads)...${c0}\n"
+    echo -e "\n${cG}  [*] Downloading via aria2c ($THREADS threads)...${c0}\n"
     ARIA_ARGS="-x $THREADS -s $SPLITS -k 1M -c --file-allocation=none -d $FILE_DIR"
     if [ -n "$PROXY" ]; then ARIA_ARGS="$ARIA_ARGS --all-proxy=$PROXY"; fi
     if [ -n "$RATE" ]; then ARIA_ARGS="$ARIA_ARGS --max-overall-download-limit=$RATE"; fi
     
     aria2c $ARIA_ARGS "$URL"
     if [ $? -eq 0 ]; then
-        echo -e "$(date) [OK] [file] $URL" >> "$LOG_FILE"
+        echo "$(date) [OK] [file] $URL" >> "$LOG_FILE"
         echo -e "\n${cG}  [OK] DOWNLOAD COMPLETED!${c0}"
         if [ "$NOTIFY" -eq 1 ]; then termux-notification -t "ALIF CYBER" -c "File Download Complete!" 2>/dev/null; fi
     else
@@ -405,7 +429,8 @@ torrent_input() {
     clear
     show_logo
     if [ -z "$1" ]; then
-        echo -n -e "    ${P_ARR} Magnet link or Torrent URL: "
+        echo -e "${cD}   Use only for content you have the right to download.${c0}"
+        echo -n -e "    ${P_ARR} Magnet link, .torrent URL or local path: "
         read -r URL
     else
         URL="$1"
@@ -413,11 +438,11 @@ torrent_input() {
     if [ -z "$URL" ]; then main_menu; return; fi
     
     echo -e "\n${cG}  [*] Starting BitTorrent Engine...${c0}\n"
-    ARIA_ARGS="--seed-time=0 --bt-max-peers=100 --enable-dht=true --enable-peer-exchange=true --dir=$TORRENT_DIR"
+    ARIA_ARGS="--seed-time=0 --bt-max-peers=100 --enable-dht=true --enable-dht6=true --bt-enable-lpd=true --enable-peer-exchange=true --bt-stop-timeout=900 --file-allocation=none --dir=$TORRENT_DIR"
     if [ -n "$RATE" ]; then ARIA_ARGS="$ARIA_ARGS --max-overall-download-limit=$RATE"; fi
     
     aria2c $ARIA_ARGS "$URL"
-    echo -e "$(date) [OK] [torrent] $URL" >> "$LOG_FILE"
+    echo "$(date) [OK] [torrent] $URL" >> "$LOG_FILE"
     read -p "Press enter..."
     main_menu
 }
@@ -445,7 +470,10 @@ extras() {
     if [ "$exsel" == "1" ]; then
         yt-dlp --no-playlist --no-warnings --print "Title: %(title)s" --print "Uploader: %(uploader)s" --print "Duration: %(duration_string)s" --print "Date: %(upload_date)s" "$URL"
     elif [ "$exsel" == "2" ]; then
-        yt-dlp --skip-download --write-subs --write-auto-subs --sub-langs "en.*,bn" --convert-subs srt -o "$VIDEO_DIR/Subtitles/%(title)s.%(ext)s" "$URL"
+        echo -n -e "    ${P_ARR} Languages [e.g. en.* / all] (blank = en.*): "
+        read -r SL
+        if [ -z "$SL" ]; then SL="en.*"; fi
+        yt-dlp --skip-download --write-subs --write-auto-subs --sub-langs "$SL" --convert-subs srt -o "$VIDEO_DIR/Subtitles/%(title)s.%(ext)s" "$URL"
     elif [ "$exsel" == "3" ]; then
         yt-dlp --skip-download --write-thumbnail --convert-thumbnails jpg -o "$VIDEO_DIR/Thumbnails/%(title)s.%(ext)s" "$URL"
     elif [ "$exsel" == "4" ]; then
@@ -463,7 +491,7 @@ batch_input() {
     show_logo
     echo -n -e "    ${P_ARR} Path to .txt file (e.g. /sdcard/links.txt): "
     read -r BATCH_FILE
-    if [ ! -f "$BATCH_FILE" ]; then echo "File not found!"; sleep 2; main_menu; return; fi
+    if [ ! -f "$BATCH_FILE" ]; then echo -e "${cR}File not found!${c0}"; sleep 2; main_menu; return; fi
     
     echo -e "\n    ${cY}[M]${c0} Media  ${cY}[F]${c0} Files  ${cY}[B]${c0} Back"
     echo -n -e "    ${P_ARR} Select: "
@@ -486,33 +514,36 @@ batch_input() {
 settings() {
     clear
     show_logo
-    echo -e "    ${cD}--- ENGINE SETTINGS ---${c0}"
-    echo -e "    ${cY}[1]${c0} Save Path ............... $MAIN_DIR"
-    echo -e "    ${cY}[2] aria2 Threads ........... $THREADS"
-    echo -e "    ${cY}[3] aria2 Splits ............ $SPLITS"
-    echo -e "    ${cY}[4] yt-dlp Fragments ........ $FRAGMENTS"
-    echo -e "    ${cY}[5] Proxy ................... $PROXY"
-    echo -e "    ${cY}[6] Cookies File ............ $COOKIES"
-    echo -e "    ${cY}[7] Browser Cookies ......... $COOKIES_BROWSER"
-    echo -e "    ${cY}[8] Impersonate Target ...... $IMPERSONATE"
-    echo -e "    ${cY}[9] Rate Limit .............. $RATE"
-    echo -e "    ${cY}[A] Force IPv4 .............. $FORCE_IPV4"
-    echo -e "    ${cY}[B] Sleep Between Items ..... $SLEEP"
-    echo -e "    ${cY}[C] aria2 Turbo for yt-dlp .. $USE_ARIA_YT"
-    echo -e "    ${cY}[D] Compatibility MP4 ....... $COMPAT"
-    echo -e "    ${cY}[E] Embed Subtitles ......... $SUBS"
-    echo -e "    ${cY}[F] Embed Metadata .......... $META"
-    echo -e "    ${cY}[G] Embed Thumbnail ......... $THUMB"
-    echo -e "    ${cY}[H] Embed Chapters .......... $CHAPTERS"
-    echo -e "    ${cY}[I] SponsorBlock Remove ..... $SPONSOR"
-    echo -e "    ${cY}[J] Download Archive ........ $ARCHIVE"
-    echo -e "    ${cY}[K] Open Folder When Done ... $AUTO_OPEN"
-    echo -e "    ${cY}[L] Sound Notification ...... $NOTIFY"
-    echo -e "    ${cY}[M] Auto-Update Daily ....... $AUTO_UPDATE"
-    echo -e "    ${cY}[O] Update Channel .......... $UPDATE_CHANNEL"
-    echo -e "    ${cY}[P] Boot Animation .......... $BOOT_ANIM"
-    echo -e "    ${cY}[R] Reset Defaults          ${cY}[X]${c0} Back"
-    echo -n -e "    ${P_ARR} Select: "
+    echo -e "    ${cD}--- ENGINE and NETWORK ---${c0}"
+    echo -e "    ${cY}[1]${c0} Save Path .................. $MAIN_DIR"
+    echo -e "    ${cY}[2]${c0} aria2 Threads .............. $THREADS"
+    echo -e "    ${cY}[3]${c0} aria2 Splits ............... $SPLITS"
+    echo -e "    ${cY}[4]${c0} yt-dlp Fragments ........... $FRAGMENTS"
+    echo -e "    ${cY}[5]${c0} Proxy ...................... $PROXY"
+    echo -e "    ${cY}[6]${c0} Cookies File ............... $COOKIES"
+    echo -e "    ${cY}[7]${c0} Browser Cookies ............ $COOKIES_BROWSER"
+    echo -e "    ${cY}[8]${c0} Impersonate Target ......... $IMPERSONATE"
+    echo -e "    ${cY}[9]${c0} Rate Limit ................. $RATE"
+    echo -e "    ${cY}[A]${c0} Force IPv4 ................. $FORCE_IPV4"
+    echo -e "    ${cY}[B]${c0} Sleep Between Items ........ $SLEEP"
+    echo -e "    ${cY}[C]${c0} aria2 Turbo for yt-dlp ..... $USE_ARIA_YT"
+    echo -e "    ${cD}--- MEDIA ---${c0}"
+    echo -e "    ${cY}[D]${c0} Compatibility MP4 (H.264) .. $COMPAT"
+    echo -e "    ${cY}[E]${c0} Embed Subtitles ............ $SUBS"
+    echo -e "    ${cY}[F]${c0} Embed Metadata ............. $META"
+    echo -e "    ${cY}[G]${c0} Embed Thumbnail ............ $THUMB"
+    echo -e "    ${cY}[H]${c0} Embed Chapters ............. $CHAPTERS"
+    echo -e "    ${cY}[I]${c0} SponsorBlock Remove ........ $SPONSOR"
+    echo -e "    ${cY}[J]${c0} Download Archive ........... $ARCHIVE"
+    echo -e "    ${cD}--- BEHAVIOR ---${c0}"
+    echo -e "    ${cY}[K]${c0} Open Folder When Done ...... $AUTO_OPEN"
+    echo -e "    ${cY}[L]${c0} Sound Notification ......... $NOTIFY"
+    echo -e "    ${cY}[M]${c0} Auto-Update Daily .......... $AUTO_UPDATE"
+    echo -e "    ${cY}[O]${c0} Update Channel ............. $UPDATE_CHANNEL"
+    echo -e "    ${cY}[P]${c0} Boot Animation ............. $BOOT_ANIM"
+    echo ""
+    echo -e "    ${cY}[R]${c0} Reset Defaults      ${cY}[X]${c0} Return to Dashboard"
+    echo -n -e "    ${P_ARR} Select setting: "
     read -r sc
 
     case $sc in
@@ -522,9 +553,9 @@ settings() {
         4) echo -n "Fragments: "; read -r FRAGMENTS; save_config ;;
         5) echo -n "Proxy (blank=none): "; read -r PROXY; save_config ;;
         6) echo -n "Cookies file path: "; read -r COOKIES; save_config ;;
-        7) echo -n "Browser: "; read -r COOKIES_BROWSER; save_config ;;
-        8) echo -n "Impersonate: "; read -r IMPERSONATE; save_config ;;
-        9) echo -n "Rate limit: "; read -r RATE; save_config ;;
+        7) echo -n "Browser (chrome/firefox/edge): "; read -r COOKIES_BROWSER; save_config ;;
+        8) echo -n "Impersonate (chrome/firefox): "; read -r IMPERSONATE; save_config ;;
+        9) echo -n "Rate limit (e.g. 5M): "; read -r RATE; save_config ;;
         [aA]) if [ "$FORCE_IPV4" -eq 1 ]; then FORCE_IPV4=0; else FORCE_IPV4=1; fi; save_config ;;
         [bB]) echo -n "Sleep sec: "; read -r SLEEP; save_config ;;
         [cC]) if [ "$USE_ARIA_YT" -eq 1 ]; then USE_ARIA_YT=0; else USE_ARIA_YT=1; fi; save_config ;;
@@ -549,6 +580,7 @@ settings() {
 diagnose() {
     clear
     show_logo
+    probe_deps
     echo -e "    ${cD}--- DIAGNOSTICS ---${c0}"
     echo -e "    yt-dlp   : $YTDLP_VER"
     echo -e "    aria2c   : $ARIA_VER"
@@ -558,25 +590,27 @@ diagnose() {
     echo -e "    Free Disk: $(df -h $HOME | awk 'NR==2 {print $4}')"
     echo ""
     echo -e "    ${cC}--- REPAIR ACTIONS ---${c0}"
-    echo -e "    ${cY}[U]${c0} Update yt-dlp       ${cY}[W]${c0} Install Missing Tools"
+    echo -e "    ${cY}[U]${c0} Update yt-dlp       ${cY}[W]${c0} Install ALL missing tools"
     echo -e "    ${cY}[P]${c0} Install PO-Token    ${cY}[I]${c0} Install curl_cffi"
     echo -e "    ${cY}[D]${c0} Install Deno        ${cY}[N]${c0} Network Test"
-    echo -e "    ${cY}[H]${c0} Clear History       ${cY}[X]${c0} Return"
-    echo -n -e "    ${P_ARR} Action: "
+    echo -e "    ${cY}[F]${c0} Open config folder  ${cY}[H]${c0} Clear history log"
+    echo -e "    ${cY}[X]${c0} Return to Dashboard"
+    echo -n -e "    ${P_ARR} Select Action: "
     read -r dc
 
     case $dc in
-        [uU]) yt-dlp -U || pip install -U yt-dlp ;;
-        [wW]) pkg update -y; pkg install yt-dlp aria2 ffmpeg python -y; probe_deps ;;
+        [uU]) echo -e "${cG}Updating yt-dlp...${c0}"; yt-dlp --update-to "$UPDATE_CHANNEL" || pip install -U yt-dlp ;;
+        [wW]) pkg update -y; pkg install yt-dlp aria2 ffmpeg python deno termux-api -y ;;
         [pP]) pip install -U bgutil-ytdlp-pot-provider ;;
         [iI]) pip install -U curl_cffi ;;
-        [dD]) pkg install deno -y; probe_deps ;;
+        [dD]) pkg install deno -y ;;
         [nN]) 
             echo -e "\n    Ping 1.1.1.1:"
             ping -c 3 1.1.1.1 | tail -n 2
             echo -e "\n    HTTP Check youtube.com:"
             curl -s -o /dev/null -w "%{http_code}\n" https://www.youtube.com
             ;;
+        [fF]) termux-open "$CFG_DIR" 2>/dev/null || echo "Cannot open folder." ;;
         [hH]) > "$LOG_FILE"; echo -e "\n    History cleared!" ;;
         [xX]) main_menu; return ;;
     esac
@@ -588,7 +622,7 @@ diagnose() {
 update_now() {
     clear
     show_logo
-    echo -e "    ${cG}[*] Updating yt-dlp...${c0}"
+    echo -e "    ${cG}[*] Updating yt-dlp ($UPDATE_CHANNEL)...${c0}"
     yt-dlp --update-to "$UPDATE_CHANNEL" || pip install -U yt-dlp
     echo -e "    ${cG}[*] Updating system packages...${c0}"
     pkg upgrade -y
@@ -676,6 +710,7 @@ change_path() {
 exit_app() {
     echo -e "\n${cC}   [+] Shutting down engine ...${c0}"
     sleep 1
+    echo -e "${cC}   [+] Session closed.${c0}"
     echo -e "${cG}   [+] Goodbye, operator!${c0}\n"
     exit 0
 }
