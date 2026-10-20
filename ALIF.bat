@@ -1,10 +1,7 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul 2>&1
-set "APP_VER=26.0"
-title ALIF CYBER ENGINE V!APP_VER!
-mode con cols=120 lines=45 >nul 2>&1
-
+set "APP_VER=1"
 :: ======================================================================
 :: AUTO-UPDATER
 :: ======================================================================
@@ -19,6 +16,8 @@ if defined REMOTE_VER (
         exit
     )
 )
+title ALIF CYBER ENGINE V!APP_VER!
+mode con cols=120 lines=45 >nul 2>&1
 
 :: ======================================================================
 :: [01] ANSI COLOR ENGINE
@@ -190,7 +189,7 @@ echo(!cC!^| !MSG_L4!      !cC!^|        !MSG_R4! !cC!^|
 echo(!cC!^| !MSG_L5!      !cC!^|        !MSG_R5! !cC!^|
 echo(!cC!^| !MSG_L6!      !cC!^|        !MSG_R6! !cC!^|
 echo(!cC!+---------------------------------------------------------------------------------------+
-echo(!cC!^| !cD!!MSG_S!!c0!
+echo(!cC!^| !cD!!MSG_S!!c0!             !cC!^| 
 echo(!cC!+---------------------------------------------------------------------------------------+
 echo.
 set "ch="
@@ -396,7 +395,7 @@ if "!PL_FLAG!"=="--yes-playlist" (
     set "OUT_TPL=!CURRENT_TARGET_DIR!\%%(title).120s !TAG_NAME!.%%(ext)s"
 )
 
-set "SRC_ARG="!URL!"" 
+set "SRC_ARG="!URL!""
 if "!BATCH_MODE!"=="1" set "SRC_ARG=-a "!BATCH_FILE!"" -o "batch:!OUT_TPL!""
 set "IS_YT=0"
 if "!BATCH_MODE!"=="1" (
