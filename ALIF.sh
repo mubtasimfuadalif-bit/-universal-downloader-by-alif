@@ -1,6 +1,4 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Self-healing line endings (fixes CRLF issues if downloaded from Windows)
-sed -i 's/\r$//' "$0" 2>/dev/null
 
 # ======================================================================
 # [01] ANSI COLOR ENGINE & SETUP
@@ -15,7 +13,23 @@ cW="\033[97m"
 cD="\033[90m"
 P_ARR="${cG}[>]${c0}"
 
-APP_VER="26.0"
+APP_VER="24.2"
+# ======================================================================
+# AUTO-UPDATER
+# ======================================================================
+echo -e "${cY}[*] Checking for updates...${c0}"
+REMOTE_VER=$(curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/version.txt")
+
+if [ -n "$REMOTE_VER" ] && [ "$REMOTE_VER" != "$APP_VER" ]; then
+    echo -e "${cY}[!] New update found (V$REMOTE_VER). Updating...${c0}"
+    curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/ALIF.sh" -o "$0"
+    chmod +x "$0"
+    echo -e "${cG}[OK] Updated to V$REMOTE_VER. Please restart the engine.${c0}"
+    sleep 2
+    exit 0
+fi
+echo -e "${cG}[OK] Engine is up to date (V$APP_VER).${c0}"
+sleep 1
 CFG_DIR="$HOME/.alif_engine"
 CFG_FILE="$CFG_DIR/config.conf"
 LOG_FILE="$CFG_DIR/history.log"
@@ -63,22 +77,6 @@ FILE_DIR="$MAIN_DIR/Files"
 TORRENT_DIR="$MAIN_DIR/Torrents"
 ARCHIVE_FILE="$MAIN_DIR/archive.txt"
 mkdir -p "$VIDEO_DIR" "$AUDIO_DIR" "$FILE_DIR" "$TORRENT_DIR"
-
-# ======================================================================
-# AUTO-UPDATER
-# ======================================================================
-echo -e "${cY}[*] Checking for updates...${c0}"
-REMOTE_VER=$(curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/version.txt")
-
-if [ -n "$REMOTE_VER" ] && [ "$REMOTE_VER" != "$APP_VER" ]; then
-    echo -e "${cY}[!] New update found (V$REMOTE_VER). Updating...${c0}"
-    curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/ALIF.sh" -o "$0"
-    sed -i 's/\r$//' "$0"
-    chmod +x "$0"
-    echo -e "${cG}[OK] Updated to V$REMOTE_VER. Please restart the engine.${c0}"
-    sleep 2
-    exit 0
-fi
 
 # ======================================================================
 # [02] SYSTEM PROBE & DEPENDENCIES
@@ -144,61 +142,75 @@ EOF
 set_lang() {
     if [ "$UILANG" == "BN" ]; then
         MSG_TITLE="BANGLISH COMMAND DASHBOARD"
-        MSG_S="[S] Settings  [U] Update  [C] Dev  [L] Lang  [R] Manual  [0] Exit"
+        MSG_L1="[1] Video/Audio Download"
+        MSG_L2="[2] Playlist / Channel Download"
+        MSG_L3="[3] Direct File (ISO/ZIP)"
+        MSG_L4="[4] Batch Download"
+        MSG_L5="[5] Format O Quality Dekhun"
+        MSG_L6="[K] Clip Download (Somoy Range)"
+        MSG_R1="[6] Download Folder Change"
+        MSG_R2="[7] System Diagnostic"
+        MSG_R3="[8] History Dekhun"
+        MSG_R4="[9] Folder Khulun"
+        MSG_R5="[T] Torrent Download"
+        MSG_R6="[E] Extras (Sub/Thumb/Info/Live)"
+        MSG_S="[S] Settings  [U] Update  [C] Developer  [L] Language  [R] Manual  [0] Exit"
     else
         MSG_TITLE="UNIVERSAL COMMAND DASHBOARD"
+        MSG_L1="[1] Media Download (Video/Audio)"
+        MSG_L2="[2] Playlist / Channel Download"
+        MSG_L3="[3] Direct File (ISO/ZIP/Any)"
+        MSG_L4="[4] Batch Download (URL List)"
+        MSG_L5="[5] Inspect Available Formats"
+        MSG_L6="[K] Clip Download (Time Range)"
+        MSG_R1="[6] Change Vault Location"
+        MSG_R2="[7] Diagnose / Repair Engine"
+        MSG_R3="[8] View Download History"
+        MSG_R4="[9] Open Download Vault"
+        MSG_R5="[T] Torrent / Magnet Downloader"
+        MSG_R6="[E] Extras (Subs/Thumb/Info/Live)"
         MSG_S="[S] Settings  [U] Update  [C] Contact  [L] Language  [R] Manual  [0] Exit"
     fi
 }
 
 # ======================================================================
-# [04] UI & LOGO (Premium Mobile Single-Column Layout)
+# [04] UI & LOGO
 # ======================================================================
 show_logo() {
-    echo -e "${cC}  ╔═══════════════════════════════════════════╗"
-    echo -e "${cC}  ║      _     _      ___  _____              ║"
-    echo -e "${cC}  ║     / \\   | |    |_ _||  ___|             ║"
-    echo -e "${cC}  ║    / _ \\  | |     | | | |_                ║"
-    echo -e "${cB}  ║   / ___ \\ | |___  | | |  _|               ║"
-    echo -e "${cB}  ║  /_/   \\_\\|_____||___||_|                 ║"
-    echo -e "${cW}  ║   C Y B E R   E N G I N E                 ║"
-    echo -e "${cG}  ║   VERSION ${APP_VER} :: ULTIMATE EDITION        ║${c0}"
-    echo -e "${cC}  ╠═══════════════════════════════════════════╣"
-    echo -e "${cD}  ║ [OP] $(whoami)@termux"
-    echo -e "${cD}  ║ [VAULT] $MAIN_DIR"
-    echo -e "${cC}  ╚═══════════════════════════════════════════╝${c0}"
+    echo -e "${cC}                               _     _      ___  _____ "
+    echo -e "${cC}                              / \\   | |    |_ _||  ___|"
+    echo -e "${cC}                             / _ \\  | |     | | | |_   "
+    echo -e "${cB}                            / ___ \\ | |___  | | |  _|  "
+    echo -e "${cB}                           /_/   \\_\\|_____||___||_|    "
+    echo -e "${cW}                C Y B E R   E N G I N E  ${cD}//${cG} V$APP_VER ${cD}//${cY} ULTIMATE EDITION${c0}"
+    echo -e "${cD}                MULTI-THREAD  //  SMART FALLBACK  //  TORRENT READY${c0}"
+    echo -e "${cC}  =============================================================================="
+    echo -e "${cD}           [OPERATOR] $(whoami)@termux   [FREE] $(df -h $HOME | awk 'NR==2 {print $4}')${c0}"
+    echo -e "${cD}           [VAULT]    $MAIN_DIR${c0}"
+    echo -e "${cC}  ------------------------------------------------------------------------------"
 }
 
 # ======================================================================
-# [05] MAIN DASHBOARD (Sequential List)
+# [05] MAIN DASHBOARD
 # ======================================================================
 main_menu() {
     set_lang
     clear
     show_logo
     build_status
-    echo -e "  $S_Y | $S_A"
-    echo -e "  $S_F | $S_D"
-    echo ""
-    echo -e "${cC}  +-------------------------------------------+"
-    echo -e "${cC}  | ${cW}          $MSG_TITLE          ${cC}|"
-    echo -e "${cC}  +-------------------------------------------+"
-    echo -e "${cC}  | ${cY}[1]${c0} Media Download (Video/Audio)          ${cC}|"
-    echo -e "${cC}  | ${cY}[2]${c0} Playlist / Channel Download           ${cC}|"
-    echo -e "${cC}  | ${cY}[3]${c0} Direct File (ISO/ZIP/Any)             ${cC}|"
-    echo -e "${cC}  | ${cY}[4]${c0} Batch Download (URL List)             ${cC}|"
-    echo -e "${cC}  | ${cY}[5]${c0} Inspect Available Formats             ${cC}|"
-    echo -e "${cC}  | ${cY}[K]${c0} Clip Download (Time Range)            ${cC}|"
-    echo -e "${cC}  +-------------------------------------------+"
-    echo -e "${cC}  | ${cY}[6]${c0} Change Vault Location                 ${cC}|"
-    echo -e "${cC}  | ${cY}[7]${c0} Diagnose / Repair Engine              ${cC}|"
-    echo -e "${cC}  | ${cY}[8]${c0} View Download History                 ${cC}|"
-    echo -e "${cC}  | ${cY}[9]${c0} Open Download Vault                   ${cC}|"
-    echo -e "${cC}  | ${cY}[T]${c0} Torrent / Magnet Downloader           ${cC}|"
-    echo -e "${cC}  | ${cY}[E]${c0} Extras (Subs/Thumb/Info/Live)         ${cC}|"
-    echo -e "${cC}  +-------------------------------------------+"
-    echo -e "${cD}  | $MSG_S"
-    echo -e "${cC}  +-------------------------------------------+${c0}"
+    echo -e "  $S_Y   $S_A   $S_F   $S_D"
+    echo -e "${cC}+---------------------------------------------------------------------------------------+"
+    echo -e "${cC}| ${cW}                              $MSG_TITLE                               ${cC}|"
+    echo -e "${cC}+------------------------------------------+--------------------------------------------+"
+    printf "${cC}| %-40s | %-40s ${cC}|\n" "$MSG_L1" "$MSG_R1"
+    printf "${cC}| %-40s | %-40s ${cC}|\n" "$MSG_L2" "$MSG_R2"
+    printf "${cC}| %-40s | %-40s ${cC}|\n" "$MSG_L3" "$MSG_R3"
+    printf "${cC}| %-40s | %-40s ${cC}|\n" "$MSG_L4" "$MSG_R4"
+    printf "${cC}| %-40s | %-40s ${cC}|\n" "$MSG_L5" "$MSG_R5"
+    printf "${cC}| %-40s | %-40s ${cC}|\n" "$MSG_L6" "$MSG_R6"
+    echo -e "${cC}+---------------------------------------------------------------------------------------+"
+    echo -e "${cC}| ${cD}$MSG_S${c0}"
+    echo -e "${cC}+---------------------------------------------------------------------------------------+"
     echo ""
     echo -n -e "    ${cG}[ALIF]${c0} ${cC}root@termux${c0}:~# "
     read -r ch
@@ -660,7 +672,7 @@ show_readme() {
     clear
     show_logo
     cat << 'EOF' > "$README_FILE"
-    ALIF CYBER ENGINE V25.0 - USER MANUAL
+    ALIF CYBER ENGINE V24.2 - USER MANUAL
     =======================================================
     1. MEDIA DOWNLOAD [1] : YouTube, FB, IG, TikTok, X (Anti-Block ready).
     2. PLAYLIST [2]       : Download full playlist.
