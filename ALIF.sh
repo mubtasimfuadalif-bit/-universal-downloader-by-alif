@@ -3,6 +3,11 @@
 sed -i 's/\r$//' "$0" 2>/dev/null
 
 # ======================================================================
+# TERMUX WAKE LOCK (Prevent Android from throttling/sleeping)
+# ======================================================================
+termux-wake-lock 2>/dev/null
+
+# ======================================================================
 # [01] ANSI COLOR ENGINE & SETUP
 # ======================================================================
 c0="\033[0m"
@@ -15,7 +20,7 @@ cW="\033[97m"
 cD="\033[90m"
 P_ARR="${cG}[>]${c0}"
 
-APP_VER="26.04"
+APP_VER="26.1"
 CFG_DIR="$HOME/.alif_engine"
 CFG_FILE="$CFG_DIR/config.conf"
 LOG_FILE="$CFG_DIR/history.log"
