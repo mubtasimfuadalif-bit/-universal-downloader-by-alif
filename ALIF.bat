@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul 2>&1
-set "APP_VER=1"
+set "APP_VER=26.3"
 :: ======================================================================
 :: AUTO-UPDATER
 :: ======================================================================
