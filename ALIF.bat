@@ -1,7 +1,10 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul 2>&1
-set "APP_VER=26.3"
+set "APP_VER=26.1"
+title ALIF CYBER ENGINE V!APP_VER!
+mode con cols=120 lines=45 >nul 2>&1
+
 :: ======================================================================
 :: AUTO-UPDATER
 :: ======================================================================
@@ -16,8 +19,6 @@ if defined REMOTE_VER (
         exit
     )
 )
-title ALIF CYBER ENGINE V!APP_VER!
-mode con cols=120 lines=45 >nul 2>&1
 
 :: ======================================================================
 :: [01] ANSI COLOR ENGINE
@@ -126,7 +127,7 @@ ping -n 2 127.0.0.1 >nul
 goto MAIN_MENU
 
 :: ======================================================================
-:: [04] LANGUAGE ENGINE (PERFECTLY PADDED STRINGS)
+:: [04] LANGUAGE ENGINE
 :: ======================================================================
 :SET_LANG
 if "!UILANG!"=="BN" goto LANG_BN
@@ -170,7 +171,7 @@ call :SET_LANG
 goto MAIN_MENU
 
 :: ======================================================================
-:: [05] MAIN DASHBOARD (MATHEMATICALLY PERFECT BOX)
+:: [05] MAIN DASHBOARD
 :: ======================================================================
 :MAIN_MENU
 set "PL_FLAG=" & set "PL_ITEMS=" & set "CLIP_ARGS=" & set "CLIP_MODE=0" & set "SRC_ARG=" & set "BATCH_MODE=0"
@@ -189,7 +190,7 @@ echo(!cC!^| !MSG_L4!      !cC!^|        !MSG_R4! !cC!^|
 echo(!cC!^| !MSG_L5!      !cC!^|        !MSG_R5! !cC!^|
 echo(!cC!^| !MSG_L6!      !cC!^|        !MSG_R6! !cC!^|
 echo(!cC!+---------------------------------------------------------------------------------------+
-echo(!cC!^| !cD!!MSG_S!!c0!             !cC!^| 
+echo(!cC!^| !cD!!MSG_S!!c0!
 echo(!cC!+---------------------------------------------------------------------------------------+
 echo.
 set "ch="
@@ -395,7 +396,7 @@ if "!PL_FLAG!"=="--yes-playlist" (
     set "OUT_TPL=!CURRENT_TARGET_DIR!\%%(title).120s !TAG_NAME!.%%(ext)s"
 )
 
-set "SRC_ARG="!URL!""
+set "SRC_ARG="!URL!"" 
 if "!BATCH_MODE!"=="1" set "SRC_ARG=-a "!BATCH_FILE!"" -o "batch:!OUT_TPL!""
 set "IS_YT=0"
 if "!BATCH_MODE!"=="1" (
@@ -570,7 +571,7 @@ if not "!RC!"=="0" goto CANCEL_HANDLER
 goto DL_COMPLETE
 
 :: ======================================================================
-:: [12] DIRECT FILE DOWNLOADER
+:: [12] DIRECT FILE DOWNLOADER (3-Attempt Retry System)
 :: ======================================================================
 :DIRECT_FILE_INPUT
 call :HEADER "DIRECT FILE DOWNLOADER  //  !THREADS! parallel streams"
@@ -582,13 +583,7 @@ if /i "!FILE_URL:~0,7!"=="magnet:" (set "TORRENT_URL=!FILE_URL!" & goto TORRENT_
 set "FNAME="
 set /p "FNAME=    !P_ARR! Custom filename [blank = auto]: "
 call :CLEAN FNAME
-if defined FNAME (
-    echo(!FNAME!| findstr /r /c:"[\\/:*?<>|]" >nul
-    if not errorlevel 1 (
-        echo(!cY!   Filename has illegal characters - using automatic name.!c0!
-        set "FNAME="
-    )
-)
+
 set "LAST_URL=!FILE_URL!"
 set "LAST_KIND=file" & set "LAST_MODE=file"
 
@@ -598,22 +593,46 @@ set "ARIA_PROXY=" & set "ARIA_RATE=" & set "ARIA_OUT="
 if defined PROXY set "ARIA_PROXY=--all-proxy="!PROXY!""
 if defined RATE  set "ARIA_RATE=--max-overall-download-limit=!RATE!"
 if defined FNAME set "ARIA_OUT=-o "!FNAME!""
+
 echo.
 if "!ARIA_OK!"=="1" (
     echo(!cC!   !P_ARR! Turbo engine: aria2c ^(!THREADS! streams, !SPLITS! splits^)!c0!
-    aria2c -x !THREADS! -s !SPLITS! -k 1M -c --max-tries=10 --retry-wait=3 --file-allocation=none --console-log-level=warn --summary-interval=1 --content-disposition-default-utf8=true -d "!FILE_DIR!" !ARIA_PROXY! !ARIA_RATE! !ARIA_OUT! "!LAST_URL!"
+    aria2c -x !THREADS! -s !SPLITS! -k 1M -c --max-tries=3 --retry-wait=3 --file-allocation=none --console-log-level=warn --summary-interval=1 --content-disposition-default-utf8=true -U "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -d "!FILE_DIR!" !ARIA_PROXY! !ARIA_RATE! !ARIA_OUT! "!LAST_URL!"
     set "RC=!errorlevel!"
 ) else (
-    echo(!cY!   aria2c not found - falling back to curl.exe ^(single stream^)!c0!
-    pushd "!FILE_DIR!"
-    if defined FNAME (
-        curl.exe -L -C - --retry 5 -o "!FNAME!" "!LAST_URL!"
-    ) else (
-        curl.exe -L -C - --retry 5 -J -O "!LAST_URL!"
+    set "RC=1"
+)
+
+if not "!RC!"=="0" (
+    echo.
+    echo(!cY!   [!] aria2c failed with original name. Auto-extracting name from URL and retrying...!c0!
+    set "TEMP_URL=!LAST_URL!"
+    for /f "tokens=1 delims=?" %%A in ("!TEMP_URL!") do set "TEMP_URL=%%A"
+    for %%F in ("!TEMP_URL!") do set "AUTO_FNAME=%%~nxF"
+    if not defined AUTO_FNAME set "AUTO_FNAME=ALIF_Download.bin"
+    echo(!cD!   Extracted name: !AUTO_FNAME!!c0!
+    
+    if "!ARIA_OK!"=="1" (
+        aria2c -x !THREADS! -s !SPLITS! -k 1M -c --max-tries=5 --retry-wait=3 --file-allocation=none --console-log-level=warn --summary-interval=1 --content-disposition-default-utf8=true -U "Mozilla/5.0" -d "!FILE_DIR!" !ARIA_PROXY! !ARIA_RATE! -o "!AUTO_FNAME!" "!LAST_URL!"
+        set "RC=!errorlevel!"
     )
+)
+
+if not "!RC!"=="0" (
+    echo.
+    echo(!cY!   [!] aria2c failed completely. Falling back to curl.exe ^(single stream^)!c0!
+    if not defined AUTO_FNAME (
+        set "TEMP_URL=!LAST_URL!"
+        for /f "tokens=1 delims=?" %%A in ("!TEMP_URL!") do set "TEMP_URL=%%A"
+        for %%F in ("!TEMP_URL!") do set "AUTO_FNAME=%%~nxF"
+        if not defined AUTO_FNAME set "AUTO_FNAME=ALIF_Download.bin"
+    )
+    pushd "!FILE_DIR!"
+    curl.exe -L -C - --retry 5 -A "Mozilla/5.0" -o "!AUTO_FNAME!" "!LAST_URL!"
     set "RC=!errorlevel!"
     popd
 )
+
 if not "!RC!"=="0" goto CANCEL_HANDLER
 goto DL_COMPLETE
 
