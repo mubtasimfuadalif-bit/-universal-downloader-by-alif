@@ -4,9 +4,6 @@ import platform
 import subprocess
 import urllib.request
 
-# ======================================================================
-# আপনার গিটহাব রিপোজিটরির লিংক
-# ======================================================================
 BAT_URL = "https://github.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/raw/refs/heads/main/ALIF.bat"
 SH_URL = "https://github.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/raw/refs/heads/main/ALIF.sh"
 ICON_URL = "https://github.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/raw/refs/heads/main/ALIF.ico"
@@ -90,10 +87,13 @@ def install_termux():
     bin_dir = os.path.join(prefix, 'bin')
     wrapper_path = os.path.join(bin_dir, 'alif')
     
+    # র‍্যাপার ফাইলে অটো-ফিক্স কমান্ড যুক্ত করা হলো
     with open(wrapper_path, 'w') as f:
         f.write('#!/data/data/com.termux/files/usr/bin/bash\n')
-        f.write('sed -i "s/\\r$//" ~/alif.sh\n')
-        f.write('bash ~/alif.sh "$@"\n')
+        f.write('if [ -f "$HOME/alif.sh" ]; then\n')
+        f.write('  sed -i "s/\\r$//" "$HOME/alif.sh"\n')
+        f.write('fi\n')
+        f.write('bash "$HOME/alif.sh" "$@"\n')
         
     run_cmd(f"chmod +x {wrapper_path}")
     print("[+] Added global 'alif' command successfully.")
