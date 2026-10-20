@@ -15,7 +15,7 @@ cW="\033[97m"
 cD="\033[90m"
 P_ARR="${cG}[>]${c0}"
 
-APP_VER="26.0"
+APP_VER="26.3"
 CFG_DIR="$HOME/.alif_engine"
 CFG_FILE="$CFG_DIR/config.conf"
 LOG_FILE="$CFG_DIR/history.log"
