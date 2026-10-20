@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul 2>&1
-set "APP_VER=26.1"
+set "APP_VER=26.04"
 title ALIF CYBER ENGINE V!APP_VER!
 mode con cols=120 lines=45 >nul 2>&1
 
