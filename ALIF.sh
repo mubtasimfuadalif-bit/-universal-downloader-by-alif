@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Self-healing line endings (fixes CRLF issues if downloaded from Windows)
+# Self-healing line endings
 sed -i 's/\r$//' "$0" 2>/dev/null
 
 # ======================================================================
@@ -15,7 +15,7 @@ cW="\033[97m"
 cD="\033[90m"
 P_ARR="${cG}[>]${c0}"
 
-APP_VER="26.3"
+APP_VER="26.04"
 CFG_DIR="$HOME/.alif_engine"
 CFG_FILE="$CFG_DIR/config.conf"
 LOG_FILE="$CFG_DIR/history.log"
@@ -80,7 +80,6 @@ REMOTE_VER=$(curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-u
 
 if [ -n "$REMOTE_VER" ] && [ "$REMOTE_VER" != "$APP_VER" ]; then
     echo -e "${cY}[!] New update found (V$REMOTE_VER). Updating...${c0}"
-    # টেম্প ফাইলে ডাউনলোড করা হচ্ছে যাতে স্ক্রিপ্ট নষ্ট না হয়
     curl -sL "https://raw.githubusercontent.com/mubtasimfuadalif-bit/-universal-downloader-by-alif/main/ALIF.sh" -o "$HOME/alif_tmp.sh"
     sed -i 's/\r$//' "$HOME/alif_tmp.sh"
     chmod +x "$HOME/alif_tmp.sh"
@@ -88,7 +87,6 @@ if [ -n "$REMOTE_VER" ] && [ "$REMOTE_VER" != "$APP_VER" ]; then
     
     echo -e "${cG}[OK] Updated to V$REMOTE_VER. Auto-restarting...${c0}"
     sleep 2
-    # অটো-রিস্টার্ট কমান্ড
     exec bash "$0"
 fi
 
@@ -164,7 +162,7 @@ set_lang() {
 }
 
 # ======================================================================
-# [04] UI & LOGO (Premium Mobile Single-Column Layout)
+# [04] UI & LOGO
 # ======================================================================
 show_logo() {
     echo -e "${cC}  ╔═══════════════════════════════════════════╗"
@@ -406,7 +404,7 @@ clip_input() {
 }
 
 # ======================================================================
-# [08] DIRECT FILE DOWNLOADER
+# [08] DIRECT FILE DOWNLOADER (3-Attempt Retry System)
 # ======================================================================
 direct_file_input() {
     clear
@@ -420,13 +418,49 @@ direct_file_input() {
         return
     fi
     
+    echo -n -e "    ${P_ARR} Custom filename [blank = auto]: "
+    read -r FNAME
+    if [ -n "$FNAME" ]; then
+        ARIA_OUT="-o $FNAME"
+    else
+        ARIA_OUT=""
+    fi
+
     echo -e "\n${cG}  [*] Downloading via aria2c ($THREADS threads)...${c0}\n"
-    ARIA_ARGS="-x $THREADS -s $SPLITS -k 1M -c --file-allocation=none -d $FILE_DIR"
+    ARIA_ARGS="-x $THREADS -s $SPLITS -k 1M -c --max-tries=3 --retry-wait=3 --file-allocation=none -d $FILE_DIR -U 'Mozilla/5.0'"
     if [ -n "$PROXY" ]; then ARIA_ARGS="$ARIA_ARGS --all-proxy=$PROXY"; fi
     if [ -n "$RATE" ]; then ARIA_ARGS="$ARIA_ARGS --max-overall-download-limit=$RATE"; fi
     
-    aria2c $ARIA_ARGS "$URL"
-    if [ $? -eq 0 ]; then
+    aria2c $ARIA_ARGS $ARIA_OUT "$URL"
+    RC=$?
+
+    # Attempt 2: Auto-extract name and retry
+    if [ $RC -ne 0 ]; then
+        echo -e "\n${cY}  [!] aria2c failed with original name. Auto-extracting name from URL and retrying...${c0}"
+        TEMP_URL="${URL%%\?*}"
+        AUTO_FNAME=$(basename "$TEMP_URL")
+        if [ -z "$AUTO_FNAME" ] || [ "$AUTO_FNAME" == "/" ]; then AUTO_FNAME="ALIF_Download.bin"; fi
+        echo -e "${cD}  Extracted name: $AUTO_FNAME${c0}"
+        
+        aria2c $ARIA_ARGS -o "$AUTO_FNAME" "$URL"
+        RC=$?
+    fi
+
+    # Attempt 3: Curl fallback
+    if [ $RC -ne 0 ]; then
+        echo -e "\n${cY}  [!] aria2c failed completely. Falling back to curl.exe...${c0}"
+        if [ -z "$AUTO_FNAME" ]; then
+            TEMP_URL="${URL%%\?*}"
+            AUTO_FNAME=$(basename "$TEMP_URL")
+            if [ -z "$AUTO_FNAME" ] || [ "$AUTO_FNAME" == "/" ]; then AUTO_FNAME="ALIF_Download.bin"; fi
+        fi
+        pushd "$FILE_DIR"
+        curl -L -C - --retry 5 -A "Mozilla/5.0" -o "$AUTO_FNAME" "$URL"
+        RC=$?
+        popd
+    fi
+
+    if [ $RC -eq 0 ]; then
         echo "$(date) [OK] [file] $URL" >> "$LOG_FILE"
         echo -e "\n${cG}  [OK] DOWNLOAD COMPLETED!${c0}"
         if [ "$NOTIFY" -eq 1 ]; then termux-notification -t "ALIF CYBER" -c "File Download Complete!" 2>/dev/null; fi
@@ -671,7 +705,7 @@ show_readme() {
     clear
     show_logo
     cat << 'EOF' > "$README_FILE"
-    ALIF CYBER ENGINE V26.0 - USER MANUAL
+    ALIF CYBER ENGINE V26.1 - USER MANUAL
     =======================================================
     1. MEDIA DOWNLOAD [1] : YouTube, FB, IG, TikTok, X (Anti-Block ready).
     2. PLAYLIST [2]       : Download full playlist.
